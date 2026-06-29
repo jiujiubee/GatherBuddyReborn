@@ -2,9 +2,6 @@ name: Publish
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "*.*.*.*"
 
 jobs:
   Build:
@@ -20,19 +17,43 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
 
-      - name: Get Environment Variables
+      - name: Compute Next Version Tag
         shell: pwsh
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-              $tag = "${{ github.event.inputs.version }}"
+          git fetch --tags
+
+          $latest = git tag --sort=-version:refname | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Select-Object -First 1
+
+          if (-not $latest) {
+              $tag = "1.0.0.0"
           } else {
-              $tag = "${{ github.ref }}" -replace 'refs/tags/', ''
+              $parts = $latest.Split('.')
+
+              if ($parts.Count -ne 4) {
+                  throw "Invalid tag format: $latest"
+              }
+
+              $parts[3] = ([int]$parts[3] + 1)
+              $tag = $parts -join '.'
           }
 
+          Write-Host "Next version: $tag"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag $tag
+          git push origin $tag
+
           "tag=$tag" | Out-File -Append -FilePath $Env:GITHUB_ENV
-          Write-Host "Using version: $tag"
+
+      - name: Checkout tag
+        shell: pwsh
+        run: |
+          git checkout ${{ env.tag }}
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -81,7 +102,7 @@ jobs:
       - name: Zip Plugin
         run: Compress-Archive -Path ./build/* -DestinationPath ./build/GatherbuddyReborn.zip
 
-      - name: Publish Plugin
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.tag }}
