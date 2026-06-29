@@ -7,9 +7,9 @@
     "Description": "Adds commands to simplify gathering by finding nodes and fish and their locations via item name and a UI to keep track of special uptime and weather conditions. Also automatically gathers items based on these conditions using lists that you specify. Automated gathering requires vnavmesh.",
     "ApplicableVersion": "any",
     "RepoUrl": "https://github.com/jiujiubee/GatherBuddyReborn",
-    "DownloadLinkInstall": "https://github.com/jiujiubee/GatherbuddyReborn/releases/download/1.0.0.0/GatherbuddyReborn.zip",
-    "DownloadLinkTesting": "https://github.com/jiujiubee/GatherbuddyReborn/releases/download/1.0.0.0/GatherbuddyReborn.zip",
-    "DownloadLinkUpdate": "https://github.com/jiujiubee/GatherbuddyReborn/releases/download/1.0.0.0/GatherbuddyReborn.zip",
+    "DownloadLinkInstall": "https://github.com/jiujiubee/GatherBuddyReborn/main/GatherbuddyReborn/GatherBuddyReborn/latest.zip",
+    "DownloadLinkTesting": "https://github.com/jiujiubee/GatherBuddyReborn/main/GatherbuddyReborn/GatherBuddyReborn/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/jiujiubee/GatherBuddyReborn/main/GatherbuddyReborn/GatherBuddyReborn/latest.zip",
     "Tags": [
       "Gathering",
       "Fishing",
