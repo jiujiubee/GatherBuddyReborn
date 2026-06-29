@@ -2,12 +2,6 @@ name: Publish
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Plugin Version (e.g. 1.0.0.0)"
-        required: true
-        default: "1.0.0.0"
-
   push:
     tags:
       - "*.*.*.*"
