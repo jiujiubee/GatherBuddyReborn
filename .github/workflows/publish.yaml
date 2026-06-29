@@ -1,15 +1,27 @@
 name: Publish
+
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Plugin Version (e.g. 1.0.0.0)"
+        required: true
+        default: "1.0.0.0"
+
   push:
     tags:
-      - '*.*.*.*'
+      - "*.*.*.*"
+
 jobs:
   Build:
     permissions:
       contents: write
+
     runs-on: windows-latest
+
     env:
       REPO_NAME: ${{ github.repository }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -17,19 +29,27 @@ jobs:
           submodules: recursive
 
       - name: Get Environment Variables
+        shell: pwsh
         run: |
-          $tag = "${{ github.ref }}" -replace 'refs/tags/', ''
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+              $tag = "${{ github.event.inputs.version }}"
+          } else {
+              $tag = "${{ github.ref }}" -replace 'refs/tags/', ''
+          }
 
           "tag=$tag" | Out-File -Append -FilePath $Env:GITHUB_ENV
+          Write-Host "Using version: $tag"
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: "10.0.x"
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Download Dalamud Latest
+        shell: pwsh
         run: |
           Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
@@ -38,26 +58,39 @@ jobs:
         run: dotnet restore Gatherbuddy/Gatherbuddy.csproj
 
       - name: Build Plugin
-        run: dotnet build --no-restore -c Release Gatherbuddy/Gatherbuddy.csproj -p:AssemblyVersion=${{ env.tag }} -p:FileVersion=${{ env.tag }} -p:PackageVersion=${{ env.tag }} -p:InformationalVersion=${{ env.tag }} --output .\build
+        run: >
+          dotnet build --no-restore
+          -c Release
+          Gatherbuddy/Gatherbuddy.csproj
+          -p:AssemblyVersion=${{ env.tag }}
+          -p:FileVersion=${{ env.tag }}
+          -p:PackageVersion=${{ env.tag }}
+          -p:InformationalVersion=${{ env.tag }}
+          --output ./build
+
       - name: Build raphael-cli from raphael-rs
+        shell: pwsh
         run: |
           git clone https://github.com/KonaeAkira/raphael-rs.git raphael-rs-temp
           cd raphael-rs-temp
           cargo build --release --package raphael-cli
+
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "Error: Failed to build raphael-cli"
-            exit 1
+              throw "Failed to build raphael-cli"
           }
-          Copy-Item -Path ".\target\release\raphael-cli.exe" -Destination "..\build\raphael-cli.exe" -Force
+
+          Copy-Item ".\target\release\raphael-cli.exe" "..\build\raphael-cli.exe" -Force
+
           cd ..
-          Remove-Item -Recurse -Force raphael-rs-temp
-          Write-Host "Successfully built and copied raphael-cli.exe"
+          Remove-Item raphael-rs-temp -Recurse -Force
 
       - name: Zip Plugin
-        run: Compress-Archive -Path .\build\* -DestinationPath .\build\GatherbuddyReborn.zip
+        run: Compress-Archive -Path ./build/* -DestinationPath ./build/GatherbuddyReborn.zip
 
       - name: Publish Plugin
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ env.tag }}
+          name: ${{ env.tag }}
           files: ./build/GatherbuddyReborn.zip
           token: ${{ secrets.GITHUB_TOKEN }}
